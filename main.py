@@ -1,27 +1,20 @@
 import requests
-from PIL import Image, ImageDraw
 from openai import OpenAI
 import os
-import base64
-import time
 
-# ====== ENV VARIABLES ======
+# ===== ENV VARIABLES =====
 OPENAI_KEY = os.getenv("OPENAI_KEY")
-META_ACCESS_TOKEN = os.getenv("META_ACCESS_TOKEN")
-PAGE_ID = os.getenv("PAGE_ID")
-IG_USER_ID = os.getenv("IG_USER_ID")
+LINKEDIN_ACCESS_TOKEN = os.getenv("LINKEDIN_ACCESS_TOKEN")
+LINKEDIN_ORG_ID = os.getenv("LINKEDIN_ORG_ID")
 
-# ====== AI CONTENT ======
+# ===== AI CONTENT =====
 client = OpenAI(api_key=OPENAI_KEY)
 
 def generate_caption():
     prompt = """
-    Create a powerful professional promotional post for a Gold Trading AI Bot.
-    Include:
-    - Strong hook
-    - Authority tone
-    - CTA
-    - 6 finance hashtags
+    Write a professional LinkedIn post promoting a Gold Trading AI Bot.
+    Keep it confident, clean, and corporate.
+    Add 5 finance hashtags at end.
     """
 
     response = client.chat.completions.create(
@@ -32,77 +25,42 @@ def generate_caption():
     return response.choices[0].message.content
 
 
-# ====== CREATE IMAGE ======
-def create_image():
-    img = Image.new("RGB", (1080, 1080), "black")
-    draw = ImageDraw.Draw(img)
-    draw.text((200, 500), "🔥 GOLD AI BOT 🔥", fill="gold")
-    img.save("post.png")
+# ===== LINKEDIN POST =====
+def post_linkedin(caption):
 
+    url = "https://api.linkedin.com/v2/ugcPosts"
 
-# ====== UPLOAD IMAGE TO FACEBOOK ======
-def upload_photo_facebook(caption):
-
-    url = f"https://graph.facebook.com/v18.0/{PAGE_ID}/photos"
-
-    files = {
-        "source": open("post.png", "rb")
+    headers = {
+        "Authorization": f"Bearer {LINKEDIN_ACCESS_TOKEN}",
+        "X-Restli-Protocol-Version": "2.0.0",
+        "Content-Type": "application/json"
     }
 
-    payload = {
-        "caption": caption,
-        "access_token": META_ACCESS_TOKEN
+    data = {
+        "author": f"urn:li:organization:{LINKEDIN_ORG_ID}",
+        "lifecycleState": "PUBLISHED",
+        "specificContent": {
+            "com.linkedin.ugc.ShareContent": {
+                "shareCommentary": {
+                    "text": caption
+                },
+                "shareMediaCategory": "NONE"
+            }
+        },
+        "visibility": {
+            "com.linkedin.ugc.MemberNetworkVisibility": "PUBLIC"
+        }
     }
 
-    response = requests.post(url, data=payload, files=files)
-    print("Facebook:", response.text)
+    response = requests.post(url, headers=headers, json=data)
+    print(response.text)
 
 
-# ====== INSTAGRAM POST ======
-def post_instagram(caption):
-
-    # STEP 1: Upload image container
-    upload_url = f"https://graph.facebook.com/v18.0/{IG_USER_ID}/media"
-
-    payload = {
-        "image_url": f"https://graph.facebook.com/v18.0/{PAGE_ID}/picture?access_token={META_ACCESS_TOKEN}",
-        "caption": caption,
-        "access_token": META_ACCESS_TOKEN
-    }
-
-    container = requests.post(upload_url, data=payload)
-    container_data = container.json()
-
-    if "id" not in container_data:
-        print("Instagram container error:", container.text)
-        return
-
-    creation_id = container_data["id"]
-
-    time.sleep(5)
-
-    # STEP 2: Publish
-    publish_url = f"https://graph.facebook.com/v18.0/{IG_USER_ID}/media_publish"
-
-    publish_payload = {
-        "creation_id": creation_id,
-        "access_token": META_ACCESS_TOKEN
-    }
-
-    response = requests.post(publish_url, data=publish_payload)
-    print("Instagram:", response.text)
-
-
-# ====== MAIN ======
+# ===== MAIN =====
 def run():
     caption = generate_caption()
-    create_image()
-
-    upload_photo_facebook(caption)
-    time.sleep(5)
-    post_instagram(caption)
+    post_linkedin(caption)
 
 
 if __name__ == "__main__":
     run()
-
