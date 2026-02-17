@@ -1,1 +1,31 @@
+name: Auto Post
+
+on:
+  schedule:
+    - cron: '30 3 * * *'   # 9AM IST
+    - cron: '30 12 * * *'  # 6PM IST
+  workflow_dispatch:
+
+jobs:
+  post:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install Dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run Script
+        env:
+          OPENAI_KEY: ${{ secrets.OPENAI_KEY }}
+          META_ACCESS_TOKEN: ${{ secrets.META_ACCESS_TOKEN }}
+          PAGE_ID: ${{ secrets.PAGE_ID }}
+          IG_USER_ID: ${{ secrets.IG_USER_ID }}
+        run: python main.py
 
