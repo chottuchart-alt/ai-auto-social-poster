@@ -2,8 +2,7 @@ name: LinkedIn Auto Post
 
 on:
   schedule:
-    - cron: '0 4 * * *'     # 9:30 AM IST
-    - cron: '0 14 * * *'    # 7:30 PM IST
+    - cron: '0 4 * * *'   # Daily 9:30 AM IST
   workflow_dispatch:
 
 jobs:
@@ -11,21 +10,19 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v3
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v4
         with:
           python-version: '3.11'
 
       - name: Install dependencies
-        run: |
-          pip install openai requests
+        run: pip install -r requirements.txt
 
-      - name: Run LinkedIn Bot
+      - name: Run Script
         env:
-          OPENAI_KEY: ${{ secrets.OPENAI_KEY }}
           LINKEDIN_ACCESS_TOKEN: ${{ secrets.LINKEDIN_ACCESS_TOKEN }}
           LINKEDIN_ORG_ID: ${{ secrets.LINKEDIN_ORG_ID }}
-        run: python main.py
+          OPENAI_KEY: ${{ secrets.OPENAI_KEY }}
+        run: python post.py
